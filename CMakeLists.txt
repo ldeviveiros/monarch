@@ -3,7 +3,7 @@
 ##################
 
 cmake_minimum_required( VERSION 2.8 )
-include( $ENV{HOME}/.dmake/dmake.cmake )
+include( ${PROJECT_SOURCE_DIR}/dmake/dmake.cmake )
 
 #########
 # setup #
