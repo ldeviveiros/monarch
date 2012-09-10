@@ -3,13 +3,15 @@
 ##################
 
 cmake_minimum_required( VERSION 2.8 )
+project( Monarch )
+
 include( ${PROJECT_SOURCE_DIR}/dmake/dmake.cmake )
 
 #########
 # setup #
 #########
 
-dmake_project_begin( Monarch 0 1 0 )
+dmake_project_begin( ${PROJECT_NAME} 0 1 0 )
 
 ########################
 # monarch dependencies #

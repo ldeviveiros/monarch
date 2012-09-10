@@ -7,7 +7,6 @@ message( STATUS "*** dmake! take it easy:-D" )
 macro( dmake_project_begin LOCAL_PROJECT_NAME LOCAL_MAJOR_VERSION LOCAL_MINOR_VERSION LOCAL_REVISION_VERSION )    
     
     # deal with satan a little
-    project( ${LOCAL_PROJECT_NAME} )
     set( CMAKE_INSTALL_PREFIX "" CACHE INTERNAL "" FORCE )
     mark_as_advanced( CMAKE_BUILD_TYPE )
     

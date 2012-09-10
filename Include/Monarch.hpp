@@ -14,7 +14,7 @@ class Monarch
         // constructors and state
         //***********************
 
-    private:
+    protected:
         //private to force use of static constructor methods
         Monarch();
 
@@ -28,7 +28,7 @@ class Monarch
         mutable State fState;
 
     public:
-        ~Monarch();
+        virtual ~Monarch();
 
         //********************************
         // methods for reading (all const)
@@ -95,7 +95,7 @@ class Monarch
         //close the file pointer
         bool Close();
 
-    private:
+    protected:
         //the MonarchIO class wraps a bare C file pointer.
         MonarchIO* fIO;
 
