@@ -3,19 +3,34 @@
 # the goal of dmake is to help you stay away from wanting to rip your balls off and bleed out when you use cmake
 message( STATUS "*** dmake! take it easy:-D" )
 
+# check if this is a stand-alone build
+set( DM_STANDALONE FALSE CACHE INTERNAL "Flag for whether or not this is a stand-alone build" )
+if( ${CMAKE_SOURCE_DIR} STREQUAL ${PROJECT_SOURCE_DIR} )
+    set( DM_STANDALONE TRUE )
+endif( ${CMAKE_SOURCE_DIR} STREQUAL ${PROJECT_SOURCE_DIR} )
+
+# indicate to this and any nested builds that this is a dmake-based build
+if( ${DM_BUILD} )
+    message(STATUS "in dmake build if block")
+    set( DM_PARENT_PROJECT_NAME ${DM_PROJECT_NAME} )
+endif (${DM_BUILD})
+set( DM_BUILD TRUE )
+
 # this macro declares a project and declares some installation and structural cache variables so you can tell cmake what you want
-macro( dmake_project_begin LOCAL_PROJECT_NAME LOCAL_MAJOR_VERSION LOCAL_MINOR_VERSION LOCAL_REVISION_VERSION )    
+macro( dmake_project_begin LOCAL_PROJECT_NAME LOCAL_MAJOR_VERSION LOCAL_MINOR_VERSION LOCAL_REVISION_VERSION LOCAL_HEADER_SUBDIRECTORY LOCAL_SOURCE_SUBDIRECTORY)    
     
     # deal with satan a little
-    set( CMAKE_INSTALL_PREFIX "" CACHE INTERNAL "" FORCE )
-    mark_as_advanced( CMAKE_BUILD_TYPE )
+    if( ${DM_STANDALONE} )
+        set( CMAKE_INSTALL_PREFIX "" CACHE INTERNAL "" FORCE )
+        mark_as_advanced( CMAKE_BUILD_TYPE )
+    endif( ${DM_STANDALONE} )
     
     # some project internal variables
     set( DM_PROJECT_NAME ${LOCAL_PROJECT_NAME} )
     set( ${DM_PROJECT_NAME}_DEPENDENCIES "" )
-    set( ${DM_PROJECT_NAME}_HEADERS "" )
-    set( ${DM_PROJECT_NAME}_LIBRARIES "" )
-    set( ${DM_PROJECT_NAME}_EXECUTABLES "" )
+    set( ${DM_PROJECT_NAME}_INTERNAL_HEADERS "" )
+    set( ${DM_PROJECT_NAME}_INTERNAL_LIBRARIES "" )
+    set( ${DM_PROJECT_NAME}_INTERNAL_EXECUTABLES "" )
     set( ${DM_PROJECT_NAME}_VERSION_MAJOR ${LOCAL_MAJOR_VERSION} )
     set( ${DM_PROJECT_NAME}_VERSION_MINOR ${LOCAL_MINOR_VERSION} )
     set( ${DM_PROJECT_NAME}_VERSION_REVISION ${LOCAL_REVISION_VERSION} )
@@ -23,23 +38,36 @@ macro( dmake_project_begin LOCAL_PROJECT_NAME LOCAL_MAJOR_VERSION LOCAL_MINOR_VE
     set( ${DM_PROJECT_NAME}_IDENTIFIER "${DM_PROJECT_NAME}.${${DM_PROJECT_NAME}_VERSION_FULL}" )
     
     # some advanced project structual cache variables
-    set( ${DM_PROJECT_NAME}_HEADER_SUBDIRECTORY "Include" CACHE STRING "name of subdirectory in library subdirectories in which header files are kept" )
-    set( ${DM_PROJECT_NAME}_SOURCE_SUBDIRECTORY "Source" CACHE STRING "name of subdirectory in library subdirectories in which source are kept" )
+    set( ${DM_PROJECT_NAME}_HEADER_SUBDIRECTORY ${LOCAL_HEADER_SUBDIRECTORY} CACHE STRING "name of subdirectory in library subdirectories in which header files are kept" )
+    set( ${DM_PROJECT_NAME}_SOURCE_SUBDIRECTORY ${LOCAL_SOURCE_SUBDIRECTORY} CACHE STRING "name of subdirectory in library subdirectories in which source are kept" )
     set( ${DM_PROJECT_NAME}_VERBOSE ON CACHE BOOL "report back to the user that everything is going ok" )
     mark_as_advanced( FORCE ${DM_PROJECT_NAME}_HEADER_SUBDIRECTORY ${DM_PROJECT_NAME}_SOURCE_SUBDIRECTORY ${DM_PROJECT_NAME}_VERBOSE )
     
     # some project installation cache variables
-    set( ${DM_PROJECT_NAME}_ROOT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
-    set( ${DM_PROJECT_NAME}_INSTALL_PREFIX "${${DM_PROJECT_NAME}_ROOT_DIRECTORY}/Install" CACHE PATH "installation prefix (changing this will recompute other install locations)" )    
+    set( ${DM_PROJECT_NAME}_SOURCE_DIRECTORY ${PROJECT_SOURCE_DIR} )
+    if( ${DM_STANDALONE} )
+        set( ${DM_PROJECT_NAME}_ROOT_DIRECTORY ${PROJECT_BINARY_DIR} )
+    else( ${DM_STANDALONE} )
+        if( ${DMAKE_BUILD} )
+            set( ${DM_PROJECT_NAME}_ROOT_DIRECTORY "${DM_PARENT_PROJECT_NAME}_ROOT_DIRECTORY/${DM_PROJECT_NAME}" )
+        else( ${DMAKE_BUILD} )
+            set( ${DM_PROJECT_NAME}_ROOT_DIRECTORY "${CMAKE_INSTALL_PREFIX}/${DM_PROJECT_NAME}" )
+        endif( ${DMAKE_BUILD} )
+    endif( ${DM_STANDALONE} )
+    if( ${${DM_PROJECT_NAME}_ROOT_DIRECTORY} STREQUAL ${PROJECT_SOURCE_DIR} )
+        set( ${DM_PROJECT_NAME}_INSTALL_PREFIX "${${DM_PROJECT_NAME}_ROOT_DIRECTORY}/Install" CACHE PATH "${DM_PROJECT_NAME} installation prefix (changing this will recompute other install locations)" ) 
+    else( ${${DM_PROJECT_NAME}_ROOT_DIRECTORY} STREQUAL ${PROJECT_SOURCE_DIR} )
+        set( ${DM_PROJECT_NAME}_INSTALL_PREFIX ${${DM_PROJECT_NAME}_ROOT_DIRECTORY} CACHE PATH "${DM_PROJECT_NAME} installation prefix (changing this will recompute other install locations)" )
+    endif( ${${DM_PROJECT_NAME}_ROOT_DIRECTORY} STREQUAL ${PROJECT_SOURCE_DIR} )   
     if( "${${DM_PROJECT_NAME}_INSTALL_PREFIX_INTERNAL}" STREQUAL "${${DM_PROJECT_NAME}_INSTALL_PREFIX}" )
-        set( ${DM_PROJECT_NAME}_INSTALL_HEADERS_DIR "${${DM_PROJECT_NAME}_INSTALL_PREFIX}/include" CACHE PATH "installation directory for headers" )
-        set( ${DM_PROJECT_NAME}_INSTALL_LIBRARIES_DIR "${${DM_PROJECT_NAME}_INSTALL_PREFIX}/lib" CACHE PATH "installation directory for libraries" )
-        set( ${DM_PROJECT_NAME}_INSTALL_EXECUTABLES_DIR "${${DM_PROJECT_NAME}_INSTALL_PREFIX}/bin" CACHE PATH "installation directory for libraries" )
+        set( ${DM_PROJECT_NAME}_INSTALL_HEADERS_DIR "${${DM_PROJECT_NAME}_INSTALL_PREFIX}/include" CACHE PATH "${DM_PROJECT_NAME} installation directory for headers" )
+        set( ${DM_PROJECT_NAME}_INSTALL_LIBRARIES_DIR "${${DM_PROJECT_NAME}_INSTALL_PREFIX}/lib" CACHE PATH "${DM_PROJECT_NAME} installation directory for libraries" )
+        set( ${DM_PROJECT_NAME}_INSTALL_EXECUTABLES_DIR "${${DM_PROJECT_NAME}_INSTALL_PREFIX}/bin" CACHE PATH "${DM_PROJECT_NAME} installation directory for libraries" )
     else( "${${DM_PROJECT_NAME}_INSTALL_PREFIX_INTERNAL}" STREQUAL "${${DM_PROJECT_NAME}_INSTALL_PREFIX}" )
         set( ${DM_PROJECT_NAME}_INSTALL_PREFIX_INTERNAL "${${DM_PROJECT_NAME}_INSTALL_PREFIX}" CACHE INTERNAL "" )
-        set( ${DM_PROJECT_NAME}_INSTALL_HEADERS_DIR "${${DM_PROJECT_NAME}_INSTALL_PREFIX}/include" CACHE PATH "installation directory for headers" FORCE )
-        set( ${DM_PROJECT_NAME}_INSTALL_LIBRARIES_DIR "${${DM_PROJECT_NAME}_INSTALL_PREFIX}/lib" CACHE PATH "installation directory for libraries" FORCE )
-        set( ${DM_PROJECT_NAME}_INSTALL_EXECUTABLES_DIR "${${DM_PROJECT_NAME}_INSTALL_PREFIX}/bin" CACHE PATH "installation directory for libraries" FORCE )
+        set( ${DM_PROJECT_NAME}_INSTALL_HEADERS_DIR "${${DM_PROJECT_NAME}_INSTALL_PREFIX}/include" CACHE PATH "${DM_PROJECT_NAME} installation directory for headers" FORCE )
+        set( ${DM_PROJECT_NAME}_INSTALL_LIBRARIES_DIR "${${DM_PROJECT_NAME}_INSTALL_PREFIX}/lib" CACHE PATH "${DM_PROJECT_NAME} installation directory for libraries" FORCE )
+        set( ${DM_PROJECT_NAME}_INSTALL_EXECUTABLES_DIR "${${DM_PROJECT_NAME}_INSTALL_PREFIX}/bin" CACHE PATH "${DM_PROJECT_NAME} installation directory for libraries" FORCE )
     endif( "${${DM_PROJECT_NAME}_INSTALL_PREFIX_INTERNAL}" STREQUAL "${${DM_PROJECT_NAME}_INSTALL_PREFIX}" )
     
     if( NOT DEFINED ${DM_PROJECT_NAME}_INSTALL_PREFIX_INTERNAL )
@@ -82,23 +110,23 @@ endmacro()
 macro( dmake_library_declare LOCAL_LIBRARY_NAME LOCAL_LIBRARY_ROOT_DIRECTORY )
     
     # append the name of the library to the project library list
-    list( APPEND ${DM_PROJECT_NAME}_LIBRARIES ${LOCAL_LIBRARY_NAME} )
+    list( APPEND ${DM_PROJECT_NAME}_INTERNAL_LIBRARIES ${LOCAL_LIBRARY_NAME} )
     
     # record root path of the library
-    set( ${LOCAL_LIBRARY_NAME}_ROOT_DIRECTORY ${${DM_PROJECT_NAME}_ROOT_DIRECTORY}/${LOCAL_LIBRARY_ROOT_DIRECTORY} )
+    set( ${LOCAL_LIBRARY_NAME}_ROOT_DIRECTORY ${${DM_PROJECT_NAME}_SOURCE_DIRECTORY}/${LOCAL_LIBRARY_ROOT_DIRECTORY} )
     
     # record header path of the library
     if( "${${DM_PROJECT_NAME}_HEADER_SUBDIRECTORY}" STREQUAL "" )
-        set( ${LOCAL_LIBRARY_NAME}_HEADER_DIRECTORY ${${LOCAL_LIBRARY_NAME}_ROOT_DIRECTORY} )
+        set( ${LOCAL_LIBRARY_NAME}_HEADER_DIRECTORY ${${DM_PROJECT_NAME}_SOURCE_DIRECTORY} )
     else( "${${DM_PROJECT_NAME}_HEADER_SUBDIRECTORY}" STREQUAL "" )
-        set( ${LOCAL_LIBRARY_NAME}_HEADER_DIRECTORY ${${LOCAL_LIBRARY_NAME}_ROOT_DIRECTORY}/${${DM_PROJECT_NAME}_HEADER_SUBDIRECTORY} )
+        set( ${LOCAL_LIBRARY_NAME}_HEADER_DIRECTORY ${${DM_PROJECT_NAME}_SOURCE_DIRECTORY}/${${DM_PROJECT_NAME}_HEADER_SUBDIRECTORY} )
     endif( "${${DM_PROJECT_NAME}_HEADER_SUBDIRECTORY}" STREQUAL "" )
     
     # record source path of the library
     if( "${${DM_PROJECT_NAME}_SOURCE_SUBDIRECTORY}" STREQUAL "" )
-        set( ${LOCAL_LIBRARY_NAME}_SOURCE_DIRECTORY ${${LOCAL_LIBRARY_NAME}_ROOT_DIRECTORY} )
+        set( ${LOCAL_LIBRARY_NAME}_SOURCE_DIRECTORY ${${DM_PROJECT_NAME}_SOURCE_DIRECTORY} )
     else( "${${DM_PROJECT_NAME}_SOURCE_SUBDIRECTORY}" STREQUAL "" )
-        set( ${LOCAL_LIBRARY_NAME}_SOURCE_DIRECTORY ${${LOCAL_LIBRARY_NAME}_ROOT_DIRECTORY}/${${DM_PROJECT_NAME}_SOURCE_SUBDIRECTORY} )
+        set( ${LOCAL_LIBRARY_NAME}_SOURCE_DIRECTORY ${${DM_PROJECT_NAME}_SOURCE_DIRECTORY}/${${DM_PROJECT_NAME}_SOURCE_SUBDIRECTORY} )
     endif( "${${DM_PROJECT_NAME}_SOURCE_SUBDIRECTORY}" STREQUAL "" )
     
     # add some editable cache variables controlling build behavior
@@ -201,10 +229,10 @@ endmacro()
 macro( dmake_executable_declare LOCAL_EXECUTABLE_NAME LOCAL_EXECUTABLE_ROOT_DIRECTORY )
     
     # append the name of the executable to the project executable list
-    list( APPEND ${DM_PROJECT_NAME}_EXECUTABLES ${LOCAL_EXECUTABLE_NAME} )
+    list( APPEND ${DM_PROJECT_NAME}_INTERNAL_EXECUTABLES ${LOCAL_EXECUTABLE_NAME} )
     
     # record root path of the executable
-    set( ${LOCAL_EXECUTABLE_NAME}_ROOT_DIRECTORY ${${DM_PROJECT_NAME}_ROOT_DIRECTORY}/${LOCAL_EXECUTABLE_ROOT_DIRECTORY} )
+    set( ${LOCAL_EXECUTABLE_NAME}_ROOT_DIRECTORY ${${DM_PROJECT_NAME}_SOURCE_DIRECTORY}/${LOCAL_EXECUTABLE_ROOT_DIRECTORY} )
     
     # record source path of the executable
     if( "${${DM_PROJECT_NAME}_SOURCE_SUBDIRECTORY}" STREQUAL "" )
@@ -287,19 +315,20 @@ macro( dmake_project_end )
     
     
     # tell satan where the includes are
-    foreach( LIBRARY_NAME ${${DM_PROJECT_NAME}_LIBRARIES} )
+    foreach( LIBRARY_NAME ${${DM_PROJECT_NAME}_INTERNAL_LIBRARIES} )
         include_directories( "${${LIBRARY_NAME}_HEADER_DIRECTORY}" )
         foreach( HEADER_NAME ${${LIBRARY_NAME}_HEADERS} )
-            list( APPEND ${DM_PROJECT_NAME}_HEADERS ${HEADER_NAME} )
+            list( APPEND ${DM_PROJECT_NAME}_INTERNAL_HEADERS ${HEADER_NAME} )
         endforeach()
     endforeach()
     include_directories( ${EXTERNAL_INCLUDES} ${INTERNAL_INCLUDES} )
 
     # tell satan to add all libraries to the build
-    foreach( LIBRARY_NAME ${${DM_PROJECT_NAME}_LIBRARIES} )
+    foreach( LIBRARY_NAME ${${DM_PROJECT_NAME}_INTERNAL_LIBRARIES} )
         if( "${${LIBRARY_NAME}_ENABLED}" STREQUAL "ON" )
             if( "${${LIBRARY_NAME}_SHARED}" STREQUAL "ON" )
                 add_library( ${LIBRARY_NAME} SHARED ${${LIBRARY_NAME}_SOURCES} )
+                set_target_properties( ${LIBRARY_NAME} PROPERTIES INSTALL_NAME_DIR ${${DM_PROJECT_NAME}_INSTALL_LIBRARIES_DIR})
             else( "${${LIBRARY_NAME}_SHARED}" STREQUAL "ON" )
                 add_library( ${LIBRARY_NAME} STATIC ${${LIBRARY_NAME}_SOURCES} )
             endif( "${${LIBRARY_NAME}_SHARED}" STREQUAL "ON" )
@@ -308,10 +337,10 @@ macro( dmake_project_end )
     endforeach()
     
     # tell satan to add all executables to the build
-    foreach( EXECUTABLE_NAME ${${DM_PROJECT_NAME}_EXECUTABLES} )
+    foreach( EXECUTABLE_NAME ${${DM_PROJECT_NAME}_INTERNAL_EXECUTABLES} )
         if( "${${EXECUTABLE_NAME}_ENABLED}" STREQUAL "ON" )
             add_executable( ${EXECUTABLE_NAME} ${${EXECUTABLE_NAME}_SOURCES} )
-            foreach( LIBRARY_NAME ${${DM_PROJECT_NAME}_LIBRARIES} )
+            foreach( LIBRARY_NAME ${${DM_PROJECT_NAME}_INTERNAL_LIBRARIES} )
                 if( "${${LIBRARY_NAME}_ENABLED}" STREQUAL "ON" )
                     target_link_libraries( ${EXECUTABLE_NAME} ${LIBRARY_NAME} )
                 endif( "${${LIBRARY_NAME}_ENABLED}" STREQUAL "ON" )
@@ -335,13 +364,22 @@ macro( dmake_project_end )
     file( APPEND ${PACKAGE_CACHE_FILE} "set( ${DM_PROJECT_NAME}_INSTALL_HEADERS_DIR ${${DM_PROJECT_NAME}_INSTALL_HEADERS_DIR} )\n" )
     file( APPEND ${PACKAGE_CACHE_FILE} "set( ${DM_PROJECT_NAME}_INSTALL_LIBRARIES_DIR ${${DM_PROJECT_NAME}_INSTALL_LIBRARIES_DIR} )\n" )
     file( APPEND ${PACKAGE_CACHE_FILE} "set( ${DM_PROJECT_NAME}_INSTALL_EXECUTABLES_DIR ${${DM_PROJECT_NAME}_INSTALL_EXECUTABLES_DIR} )\n" )
-    file( APPEND ${PACKAGE_CACHE_FILE} "set( ${DM_PROJECT_NAME}_LIBRARIES ${${DM_PROJECT_NAME}_LIBRARIES} ) \n" )
-    file( APPEND ${PACKAGE_CACHE_FILE} "set( ${DM_PROJECT_NAME}_EXECUTABLES ${${DM_PROJECT_NAME}_EXECUTABLES} )\n" )
+    file( APPEND ${PACKAGE_CACHE_FILE} "set( ${DM_PROJECT_NAME}_INTERNAL_LIBRARIES ${${DM_PROJECT_NAME}_INTERNAL_LIBRARIES} ) \n" )
+    file( APPEND ${PACKAGE_CACHE_FILE} "set( ${DM_PROJECT_NAME}_INTERNAL_EXECUTABLES ${${DM_PROJECT_NAME}_INTERNAL_EXECUTABLES} )\n" )
 
     #install everything
-    install( FILES ${${DM_PROJECT_NAME}_HEADERS} DESTINATION ${${DM_PROJECT_NAME}_INSTALL_HEADERS_DIR} )
-    install( TARGETS ${${DM_PROJECT_NAME}_LIBRARIES} DESTINATION ${${DM_PROJECT_NAME}_INSTALL_LIBRARIES_DIR} )
-    install( TARGETS ${${DM_PROJECT_NAME}_EXECUTABLES} DESTINATION ${${DM_PROJECT_NAME}_INSTALL_EXECUTABLES_DIR} )
+    install( FILES ${${DM_PROJECT_NAME}_INTERNAL_HEADERS} DESTINATION ${${DM_PROJECT_NAME}_INSTALL_HEADERS_DIR} )
+    install( TARGETS ${${DM_PROJECT_NAME}_INTERNAL_LIBRARIES} DESTINATION ${${DM_PROJECT_NAME}_INSTALL_LIBRARIES_DIR} )
+    install( TARGETS ${${DM_PROJECT_NAME}_INTERNAL_EXECUTABLES} DESTINATION ${${DM_PROJECT_NAME}_INSTALL_EXECUTABLES_DIR} )
+    
+    if( NOT ${DM_STANDALONE} )
+        set( ${DM_PROJECT_NAME}_LIBRARIES ${${DM_PROJECT_NAME}_INTERNAL_LIBRARIES} PARENT_SCOPE )
+#        set( ${DM_PROJECT_NAME}_LIBRARIES "-L${${DM_PROJECT_NAME}_INSTALL_LIBRARIES_DIR}")
+#        foreach( LIBRARY_NAME ${${DM_PROJECT_NAME}_INTERNAL_LIBRARIES} )
+#            set( ${DM_PROJECT_NAME}_LIBRARIES "${${DM_PROJECT_NAME}_LIBRARIES} -l${LIBRARY_NAME}" )
+#        endforeach()
+#        set( ${DM_PROJECT_NAME}_LIBRARIES ${${DM_PROJECT_NAME}_LIBRARIES} PARENT_SCOPE )
+    endif( NOT ${DM_STANDALONE} )
     
 endmacro()
 

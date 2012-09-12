@@ -11,14 +11,14 @@ include( ${PROJECT_SOURCE_DIR}/dmake/dmake.cmake )
 # setup #
 #########
 
-dmake_project_begin( ${PROJECT_NAME} 0 1 0 )
+dmake_project_begin( ${PROJECT_NAME} 0 1 0 "Include" "Source" )
 
 ########################
 # monarch dependencies #
 ########################
 
 find_package( Protobuf )
-protobuf_generate_cpp( Monarch_Protobuf_Source Monarch_Protobuf_Header ${Monarch_ROOT_DIRECTORY}/Protobuf/MonarchHeader.proto )
+protobuf_generate_cpp( Monarch_Protobuf_Source Monarch_Protobuf_Header ${Monarch_SOURCE_DIRECTORY}/Protobuf/MonarchHeader.proto )
 
 ###################
 # monarch library #
