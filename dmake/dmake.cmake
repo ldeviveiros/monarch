@@ -374,11 +374,6 @@ macro( dmake_project_end )
     
     if( NOT ${DM_STANDALONE} )
         set( ${DM_PROJECT_NAME}_LIBRARIES ${${DM_PROJECT_NAME}_INTERNAL_LIBRARIES} PARENT_SCOPE )
-#        set( ${DM_PROJECT_NAME}_LIBRARIES "-L${${DM_PROJECT_NAME}_INSTALL_LIBRARIES_DIR}")
-#        foreach( LIBRARY_NAME ${${DM_PROJECT_NAME}_INTERNAL_LIBRARIES} )
-#            set( ${DM_PROJECT_NAME}_LIBRARIES "${${DM_PROJECT_NAME}_LIBRARIES} -l${LIBRARY_NAME}" )
-#        endforeach()
-#        set( ${DM_PROJECT_NAME}_LIBRARIES ${${DM_PROJECT_NAME}_LIBRARIES} PARENT_SCOPE )
     endif( NOT ${DM_STANDALONE} )
     
 endmacro()
