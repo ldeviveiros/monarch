@@ -11,9 +11,8 @@ endif( ${CMAKE_SOURCE_DIR} STREQUAL ${PROJECT_SOURCE_DIR} )
 
 # indicate to this and any nested builds that this is a dmake-based build
 if( ${DM_BUILD} )
-    message(STATUS "in dmake build if block")
     set( DM_PARENT_PROJECT_NAME ${DM_PROJECT_NAME} )
-endif (${DM_BUILD})
+endif( ${DM_BUILD} )
 set( DM_BUILD TRUE )
 
 # this macro declares a project and declares some installation and structural cache variables so you can tell cmake what you want
