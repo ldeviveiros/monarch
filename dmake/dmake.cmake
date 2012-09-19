@@ -302,7 +302,9 @@ macro( dmake_project_end )
     foreach( DEPENDENCY_NAME ${${DM_PROJECT_NAME}_DEPENDENCIES} )
         list( APPEND EXTERNAL_INCLUDES "${${DEPENDENCY_NAME}_INSTALL_HEADERS_DIR}" )
     endforeach()
-    message( STATUS "*** external includes are <${EXTERNAL_INCLUDES}>" )
+    if( "${${DM_PROJECT_NAME}_VERBOSE}" STREQUAL "ON" )
+        message( STATUS "*** external includes are <${EXTERNAL_INCLUDES}>" )
+    endif( "${${DM_PROJECT_NAME}_VERBOSE}" STREQUAL "ON" )
     
     # add all external libraries to the linker link path
     foreach( DEPENDENCY_NAME ${${DM_PROJECT_NAME}_DEPENDENCIES} )
@@ -310,7 +312,9 @@ macro( dmake_project_end )
             list( APPEND EXTERNAL_LIBRARIES "${${DEPENDENCY_NAME}_INSTALL_LIBRARIES_DIR}/lib${LIBRARY_NAME}.so" )
         endforeach()
     endforeach()
-    message( STATUS "*** external libraries are <${EXTERNAL_LIBRARIES}>" )
+    if( "${${DM_PROJECT_NAME}_VERBOSE}" STREQUAL "ON" )
+        message( STATUS "*** external libraries are <${EXTERNAL_LIBRARIES}>" )
+    endif( "${${DM_PROJECT_NAME}_VERBOSE}" STREQUAL "ON" )
     
     
     # tell satan where the includes are
