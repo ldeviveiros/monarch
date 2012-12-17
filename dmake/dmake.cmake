@@ -378,7 +378,7 @@ macro( dmake_project_end )
     
     # prepare the cache file
     if( ${DMAKE_USE_CACHE} )
-        set( PACKAGE_CACHE_FILE ${DMAKE_CHACHE_DIR}/${${DM_PROJECT_NAME}_IDENTIFIER}.cmake )
+        set( PACKAGE_CACHE_FILE ${DMAKE_CACHE_DIR}/${${DM_PROJECT_NAME}_IDENTIFIER}.cmake )
     else( ${DMAKE_USE_CACHE} )
         set( PACKAGE_CACHE_FILE ${${DM_PROJECT_NAME}_INSTALL_PREFIX}/${${DM_PROJECT_NAME}_IDENTIFIER}.cmake )
     endif( ${DMAKE_USE_CACHE} )
