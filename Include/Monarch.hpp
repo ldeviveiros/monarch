@@ -52,7 +52,7 @@ class Monarch
         //this method parses the file for a next record.
         //if the record demarshalled correctly, this returns true and the record is refreshed with content.
         //when the end of the file is reached, this will return false.
-        bool ReadRecord() const;
+        bool ReadRecord( int anOffset = 0 ) const;
 
         //get the pointer to the current channel one record.
         const MonarchRecord* GetRecordOne() const;
@@ -86,11 +86,8 @@ class Monarch
         //if the record marshalled correctly, this returns true.
         bool WriteRecord();
 
-        //get the pointer to the current channel one record.
-        MonarchRecord* GetRecordOne();
-
-        //get the pointer to the current channel two record.
-        MonarchRecord* GetRecordTwo();
+        //get the pointer to the current record.
+        MonarchRecord* GetRecordInterleaved();
 
         //close the file pointer
         bool Close();
@@ -103,7 +100,12 @@ class Monarch
         mutable MonarchHeader* fHeader;
 
         //the records
-        mutable size_t fRecordSize;
+        mutable size_t fInterleavedRecordSize;
+
+        mutable MonarchRecord* fRecordInterleaved;
+        mutable char* fRecordInterleavedBytes;
+
+        mutable size_t fSplitRecordSize;
 
         mutable MonarchRecord* fRecordOne;
         mutable char* fRecordOneBytes;
@@ -111,14 +113,10 @@ class Monarch
         mutable MonarchRecord* fRecordTwo;
         mutable char* fRecordTwoBytes;
 
-        //the private read-write functions
-        mutable bool (Monarch::*fReadFunction)() const;
-        bool ReadRecordOne() const;
-        bool ReadRecordTwo() const;
-
-        mutable bool (Monarch::*fWriteFunction)();
-        bool WriteRecordOne();
-        bool WriteRecordTwo();
+        //the private read functions
+        mutable void (Monarch::*fReadFunction)() const;
+        void ReadRecordOne() const;
+        void ReadRecordTwo() const;
 };
 
 inline MonarchHeader* Monarch::GetHeader()
@@ -130,14 +128,11 @@ inline const MonarchHeader* Monarch::GetHeader() const
     return fHeader;
 }
 
-inline MonarchRecord* Monarch::GetRecordOne()
+inline MonarchRecord* Monarch::GetRecordInterleaved()
 {
-    return fRecordOne;
+    return fRecordInterleaved;
 }
-inline MonarchRecord* Monarch::GetRecordTwo()
-{
-    return fRecordTwo;
-}
+
 inline const MonarchRecord* Monarch::GetRecordOne() const
 {
     return fRecordOne;
