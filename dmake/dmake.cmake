@@ -59,7 +59,7 @@ macro( dmake_project_begin LOCAL_PROJECT_NAME LOCAL_MAJOR_VERSION LOCAL_MINOR_VE
     set( ${DM_PROJECT_NAME}_VERSION_REVISION ${LOCAL_REVISION_VERSION} )
     set( ${DM_PROJECT_NAME}_VERSION_FULL "${${DM_PROJECT_NAME}_VERSION_MAJOR}.${${DM_PROJECT_NAME}_VERSION_MINOR}.${${DM_PROJECT_NAME}_VERSION_REVISION}" )
     set( ${DM_PROJECT_NAME}_IDENTIFIER "${DM_PROJECT_NAME}.${${DM_PROJECT_NAME}_VERSION_FULL}" )
-    
+
     # some advanced project structual cache variables
     set( ${DM_PROJECT_NAME}_HEADER_SUBDIRECTORY ${LOCAL_HEADER_SUBDIRECTORY} CACHE STRING "name of subdirectory in library subdirectories in which header files are kept" )
     set( ${DM_PROJECT_NAME}_SOURCE_SUBDIRECTORY ${LOCAL_SOURCE_SUBDIRECTORY} CACHE STRING "name of subdirectory in library subdirectories in which source are kept" )
@@ -96,6 +96,16 @@ macro( dmake_project_begin LOCAL_PROJECT_NAME LOCAL_MAJOR_VERSION LOCAL_MINOR_VE
     if( NOT DEFINED ${DM_PROJECT_NAME}_INSTALL_PREFIX_INTERNAL )
         set( ${DM_PROJECT_NAME}_INSTALL_PREFIX_INTERNAL "${${DM_PROJECT_NAME}_INSTALL_PREFIX}" CACHE INTERNAL "" )
     endif( NOT DEFINED ${DM_PROJECT_NAME}_INSTALL_PREFIX_INTERNAL ) 
+
+    # add the automatically determined parts of the RPATH
+    # which point to directories outside the build tree to the install RPATH
+    set( CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE )
+
+    # the RPATH to be used when installing, but only if it's not a system directory
+    list( FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${${DM_PROJECT_NAME}_INSTALL_LIBRARIES_DIR}" isSystemDir )
+    if( "${isSystemDir}" STREQUAL "-1" )
+        set( CMAKE_INSTALL_RPATH "${${DM_PROJECT_NAME}_INSTALL_LIBRARIES_DIR}" )
+    endif( "${isSystemDir}" STREQUAL "-1" )
     
 endmacro()
 
@@ -360,6 +370,7 @@ macro( dmake_project_end )
                 add_library( ${LIBRARY_NAME} STATIC ${${LIBRARY_NAME}_SOURCES} )
             endif( "${${LIBRARY_NAME}_SHARED}" STREQUAL "ON" )
             target_link_libraries( ${LIBRARY_NAME} ${EXTERNAL_LIBRARIES} )
+#	    export( TARGETS ${LIBRARY_NAME} APPEND FILE "MonarchExport.cmake" )
         endif( "${${LIBRARY_NAME}_ENABLED}" STREQUAL "ON" )
     endforeach()
     
@@ -373,6 +384,7 @@ macro( dmake_project_end )
                 endif( "${${LIBRARY_NAME}_ENABLED}" STREQUAL "ON" )
             endforeach()
             target_link_libraries( ${EXECUTABLE_NAME} ${EXTERNAL_LIBRARIES} )
+#	    export( TARGETS ${EXECUTABLE_NAME} APPEND FILE "MonarchExport.cmake" )
         endif( "${${EXECUTABLE_NAME}_ENABLED}" STREQUAL "ON" )
     endforeach()
     
